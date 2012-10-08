@@ -1,5 +1,5 @@
-function [zposj,dE_Ej,Ebarj,dFWpctj,ZFWmmj,z_barj,Ebarcutsj,fcutj,sigzGj,sigEGj,I_pkj,I_pkfj] = LiTrack(fn,seed,z0in,dQ_Q,param,blnew,inp_struc,wake_fn);
-
+function LT_OUTPUT = LiTrack(fn,seed,z0in,dQ_Q,param,blnew,inp_struc,wake_fn)
+%function [zposj,dE_Ej,Ebarj,dFWpctj,ZFWmmj,z_barj,Ebarcutsj,fcutj,sigzGj,sigEGj,I_pkj,I_pkfj] = LiTrack(fn,seed,z0in,dQ_Q,param,blnew,inp_struc,wake_fn)
 %	[zposj,dE_Ej,Ebarj,dFWpctj,ZFWmmj,z_barj,Ebarcutsj,fcutj,sigzGj,sigEGj] = litrack_for_gui(fn[,seed,z0in,dQ_Q,param,blnew,inp_struc,wake_fn]);
 %
 %	TRY IT....  just type:   litrack('spps0')
@@ -889,33 +889,37 @@ for j  = 1:nb					% loop over all beamline sections of BL-file
       dE_Ej(1:length(d),jc) = d(:);
       zposj(1:length(z),jc) = z(:);
       Ebarj(jc) = Ebar;
-      if nargout > 3				                % if FWHM output parameters wanted...
+      %if nargout > 3				                % if FWHM output parameters wanted...
         zmm     = z*1E3;				            % convert to [mm]
         dpct    = d*100;				            % convert to [%]
 		ii = find(zmm);
         [Nz1,Z] = hist(zmm(ii),Nbin);			    % bin the Z-distribution
+        HIST_Z(1:Nbin,jc) = Nz1;                           % I'll take that too
+        AXIS_Z(1:Nbin,jc) = Z;                             % With the axis
         ZFWmmj(jc) = FWHM(Z,Nz1,0.5);		        % calc. Z-FWHM [mm]
         dZ = mean(diff(Z));    	           	        % Z bin size [mm]
         I  = Nz1*(Ne1/1E10/Nesim)*elec*cspeed/dZ;	% convert N to peak current [kA]
-        if nargout > 8
+        %if nargout > 8
           [If,q,dq] = gauss_fit(Z,I,1E-3*ones(size(I)),0);
           sigzGj(jc) = q(4);				        % gaussian fit sigma_Z [mm]
-        end
+        %end
  		ii = find(dpct);
         [Nd,D]  = hist(dpct(ii),Nbin);			    % bin the dE/E-distribution
+        HIST_D(1:Nbin,jc) = Nd;                            % I'll take that too
+        AXIS_D(1:Nbin,jc) = D;                             % With the axis
         dFWpctj(jc) = FWHM(D,Nd,0.5);		        % calc. dE/E-FWHM [%]
         z_barj(jc) = z_bar;
         Ebarcutsj(jc) = Ebarcuts;
-        if nargout > 9
+        %if nargout > 9
           [yf,q,dq] = gauss_fit(D,Nd,1E-3*ones(size(Nd)),0);
           sigEGj(jc) = q(4);				        % gaussian fit sigma_dE/E0 [%]
 		  I_pk1 = max(I);
           I_pkj(jc) = I_pk1;                        % peak current in bunch center [kA]
 		  I_pkfj(jc) = max(If);
-        end  
-        fcutj(jc)    = 1 - Ne1/Ne0;					% fraction of particles cut [ ]
-        fcutj(jc)    = Nesim;
-      end
+        %end  
+        %fcutj(jc)    = 1 - Ne1/Ne0;					% fraction of particles cut [ ]
+        fcutj(jc) = Nesim;
+      %end
     end
   end                                               % end cod < 0 | cod == 99 stuff
   if abs(cod) == 99
@@ -946,6 +950,26 @@ end                                                 % end loop over all beamline
 %    fcut    = 1 - Nesim/Nesim0;			% fraction of particles cut [ ]
 %  end
 %end
+
+if nargout == 1
+    LT_OUTPUT.Z.DIST = zposj;
+    LT_OUTPUT.Z.HIST = HIST_Z;
+    LT_OUTPUT.Z.AXIS = AXIS_Z;
+    LT_OUTPUT.Z.AVG  = z_barj;
+    LT_OUTPUT.Z.FWHM = ZFWmmj;
+    LT_OUTPUT.Z.SIG  = sigzGj;
+
+    LT_OUTPUT.E.DIST = dE_Ej;
+    LT_OUTPUT.E.HIST = HIST_D;
+    LT_OUTPUT.E.AXIS = AXIS_D;
+    LT_OUTPUT.E.AVG  = Ebarj;
+    LT_OUTPUT.E.FWHM = dFWpctj;
+    LT_OUTPUT.E.SIG  = sigEGj;
+
+    LT_OUTPUT.I.PART = fcutj;
+    LT_OUTPUT.I.PEAK = I_pkj;
+    LT_OUTPUT.I.SIG  = I_pkfj;
+end
 
 end_time = get_time;
 disp(' ')
