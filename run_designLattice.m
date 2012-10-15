@@ -46,4 +46,4 @@ PARAM.ENRG.E2    = 20.35;   % Energy at S20 (GeV)
 
 global LINAC;
 LINAC = des_amp_and_phase();
-LiTrack('FACETDSECT');
+LT_OUTPUT = LiTrack('FACETDSECT');
